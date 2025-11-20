@@ -1,0 +1,215 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Meal - Caloetracker{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-plus me-2"></i>Add New Meal</h4>
+            </div>
+            <div class="card-body">
+                <form id="meal-form">
+                    {% csrf_token %}
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label">Meal Type</label>
+                            {{ form.meal_type }}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h5>Add Food Items</h5>
+                        <div class="input-group mb-3">
+                            <input type="text" id="food-search" class="form-control"
+                                placeholder="Search for food items...">
+                            <button type="button" id="search-btn" class="btn btn-outline-primary">Search</button>
+                        </div>
+
+                        <div id="search-results" class="mb-3" style="display: none;">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Search Results</h6>
+                                </div>
+                                <div class="card-body" id="results-container"
+                                    style="max-height: 200px; overflow-y: auto;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="selected-foods" class="mb-4">
+                        <h5>Selected Food Items</h5>
+                        <div id="selected-items-container">
+                            <p class="text-muted">No food items selected yet.</p>
+                        </div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save me-2"></i>Save Meal
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Meal Information</h5>
+            </div>
+            <div class="card-body">
+                <div id="meal-summary">
+                    <p class="text-muted">Add food items to see the total calories.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    $(document).ready(function () {
+        let selectedFoods = [];
+
+        $('#search-btn').click(function () {
+            const query = $('#food-search').val();
+            if (query.length > 2) {
+                $.get('/food-search/', { search_query: query }, function (data) {
+                    const container = $('#results-container');
+                    container.empty();
+
+                    if (data.length > 0) {
+                        data.forEach(function (food) {
+                            const foodHtml = `
+                            <div class="food-item d-flex justify-content-between align-items-center p-2 border-bottom">
+                                <div>
+                                    <strong>${food.name}</strong>
+                                    <br>
+                                    <small class="text-muted">${food.calories} kcal per ${food.serving_size}</small>
+                                </div>
+                                <button class="btn btn-sm btn-primary add-food" data-food-id="${food.id}" data-food-name="${food.name}" data-food-calories="${food.calories}">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        `;
+                            container.append(foodHtml);
+                        });
+                        $('#search-results').show();
+                    } else {
+                        container.html('<p class="text-muted p-2">No results found.</p>');
+                        $('#search-results').show();
+                    }
+                });
+            }
+        });
+
+        $(document).on('click', '.add-food', function () {
+            const foodId = $(this).data('food-id');
+            const foodName = $(this).data('food-name');
+            const foodCalories = $(this).data('food-calories');
+
+            // Check if food is already selected
+            if (!selectedFoods.find(food => food.food_id === foodId)) {
+                selectedFoods.push({
+                    food_id: foodId,
+                    name: foodName,
+                    calories: foodCalories,
+                    quantity: 1
+                });
+                updateSelectedFoods();
+            }
+        });
+
+        function updateSelectedFoods() {
+            const container = $('#selected-items-container');
+            const summary = $('#meal-summary');
+
+            if (selectedFoods.length === 0) {
+                container.html('<p class="text-muted">No food items selected yet.</p>');
+                summary.html('<p class="text-muted">Add food items to see the total calories.</p>');
+                return;
+            }
+
+            let totalCalories = 0;
+            let itemsHtml = '';
+
+            selectedFoods.forEach((food, index) => {
+                const itemCalories = food.calories * food.quantity;
+                totalCalories += itemCalories;
+
+                itemsHtml += `
+                <div class="selected-food-item d-flex justify-content-between align-items-center p-2 border-bottom">
+                    <div>
+                        <strong>${food.name}</strong>
+                        <br>
+                        <small class="text-muted">
+                            <input type="number" class="form-control form-control-sm d-inline-block" style="width: 80px;" 
+                                   value="${food.quantity}" min="0.1" step="0.1" 
+                                   onchange="updateQuantity(${index}, this.value)">
+                            serving(s) × ${food.calories} kcal = ${itemCalories.toFixed(1)} kcal
+                        </small>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger" onclick="removeFood(${index})">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            });
+
+            container.html(itemsHtml);
+            summary.html(`
+            <h4>Total Calories: ${totalCalories.toFixed(1)} kcal</h4>
+            <p class="text-muted small">This meal will add ${totalCalories.toFixed(1)} calories to your daily total.</p>
+        `);
+        }
+
+        window.updateQuantity = function (index, quantity) {
+            selectedFoods[index].quantity = parseFloat(quantity);
+            updateSelectedFoods();
+        };
+
+        window.removeFood = function (index) {
+            selectedFoods.splice(index, 1);
+            updateSelectedFoods();
+        };
+
+        $('#meal-form').submit(function (e) {
+            e.preventDefault();
+
+            if (selectedFoods.length === 0) {
+                alert('Please add at least one food item to the meal.');
+                return;
+            }
+
+            const formData = {
+                meal_type: $('#id_meal_type').val(),
+                food_items: selectedFoods
+            };
+
+            $.ajax({
+                url: '/add-meal/',
+                type: 'POST',
+                data: JSON.stringify(formData),
+                contentType: 'application/json',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                success: function (response) {
+                    if (response.success) {
+                        window.location.href = '/';
+                    }
+                },
+                error: function () {
+                    alert('Error saving meal. Please try again.');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

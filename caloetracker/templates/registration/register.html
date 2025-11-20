@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block title %}Register - Caloetracker{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-user-plus me-2"></i>Create Your Account</h4>
+            </div>
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_username" class="form-label">Username</label>
+                            {{ form.username }}
+                            {% if form.username.errors %}
+                            <div class="text-danger">{{ form.username.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="id_email" class="form-label">Email</label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                            <div class="text-danger">{{ form.email.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_age" class="form-label">Age</label>
+                            {{ form.age }}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="id_gender" class="form-label">Gender</label>
+                            {{ form.gender }}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_height" class="form-label">Height (cm)</label>
+                            {{ form.height }}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="id_weight" class="form-label">Weight (kg)</label>
+                            {{ form.weight }}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_goal" class="form-label">Goal</label>
+                            {{ form.goal }}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="id_activity_level" class="form-label">Activity Level</label>
+                            {{ form.activity_level }}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_password1" class="form-label">Password</label>
+                            {{ form.password1 }}
+                            {% if form.password1.errors %}
+                            <div class="text-danger">{{ form.password1.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="id_password2" class="form-label">Confirm Password</label>
+                            {{ form.password2 }}
+                            {% if form.password2.errors %}
+                            <div class="text-danger">{{ form.password2.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-user-plus me-2"></i>Create Account
+                        </button>
+                    </div>
+                </form>
+
+                <div class="text-center mt-3">
+                    <p>Already have an account? <a href="{% url 'login' %}" class="text-decoration-none">Login here</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-control,
+    .form-select {
+        border-radius: 8px;
+        padding: 10px;
+        border: 1px solid #ddd;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: var(--secondary-color);
+        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+    }
+</style>
+{% endblock %}

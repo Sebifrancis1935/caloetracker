@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile - Caloetracker{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-user me-2"></i>Your Profile</h4>
+            </div>
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Age</label>
+                            {{ form.age }}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Gender</label>
+                            {{ form.gender }}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Height (cm)</label>
+                            {{ form.height }}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Weight (kg)</label>
+                            {{ form.weight }}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Goal</label>
+                            {{ form.goal }}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Activity Level</label>
+                            {{ form.activity_level }}
+                        </div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save me-2"></i>Update Profile
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Your Calorie Info</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>Maintenance Calories:</strong>
+                    <div class="calorie-display text-center my-3">{{ maintenance_calories }} kcal</div>
+                    <p class="text-muted small">This is how many calories you need to maintain your current weight.</p>
+                </div>
+
+                <div class="mb-3">
+                    <strong>Daily Target:</strong>
+                    <div class="calorie-display text-center my-3">{{ daily_target }} kcal</div>
+                    <p class="text-muted small">
+                        {% if user.goal == 'LOSE' %}
+                        You're aiming to lose weight with a 500 calorie deficit.
+                        {% elif user.goal == 'GAIN' %}
+                        You're aiming to gain weight with a 500 calorie surplus.
+                        {% else %}
+                        You're aiming to maintain your current weight.
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}0

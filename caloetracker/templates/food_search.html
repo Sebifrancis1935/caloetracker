@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Food Search - Caloetracker{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-search me-2"></i>Food Database</h4>
+            </div>
+            <div class="card-body">
+                <form method="get" class="mb-4">
+                    <div class="input-group">
+                        {{ form.search_query }}
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search me-2"></i>Search
+                        </button>
+                    </div>
+                </form>
+
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Food Item</th>
+                                <th>Calories</th>
+                                <th>Protein (g)</th>
+                                <th>Carbs (g)</th>
+                                <th>Fat (g)</th>
+                                <th>Serving Size</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for food in food_items %}
+                            <tr>
+                                <td>{{ food.name }}</td>
+                                <td><span class="badge bg-warning">{{ food.calories }} kcal</span></td>
+                                <td>{{ food.protein }}</td>
+                                <td>{{ food.carbs }}</td>
+                                <td>{{ food.fat }}</td>
+                                <td><small class="text-muted">{{ food.serving_size }}</small></td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4">
+                                    <i class="fas fa-search fa-2x text-muted mb-3"></i>
+                                    <p class="text-muted">No food items found. Try a different search term.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Custom Food - Caloetracker{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Add Custom Food Item</h4>
+            </div>
+            <div class="card-body p-4">
+                <p class="text-muted mb-4">
+                    Add your own food items to the database. These will be available for you to use when logging meals.
+                </p>
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <label for="id_name" class="form-label">Food Name *</label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                            <div class="text-danger">{{ form.name.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_calories" class="form-label">Calories (kcal) *</label>
+                            {{ form.calories }}
+                            {% if form.calories.errors %}
+                            <div class="text-danger">{{ form.calories.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="id_serving_size" class="form-label">Serving Size *</label>
+                            {{ form.serving_size }}
+                            <div class="form-text">e.g., 100g, 1 cup, 1 piece, 1 slice</div>
+                            {% if form.serving_size.errors %}
+                            <div class="text-danger">{{ form.serving_size.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="id_protein" class="form-label">Protein (g)</label>
+                            {{ form.protein }}
+                            {% if form.protein.errors %}
+                            <div class="text-danger">{{ form.protein.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="id_carbs" class="form-label">Carbs (g)</label>
+                            {{ form.carbs }}
+                            {% if form.carbs.errors %}
+                            <div class="text-danger">{{ form.carbs.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="id_fat" class="form-label">Fat (g)</label>
+                            {{ form.fat }}
+                            {% if form.fat.errors %}
+                            <div class="text-danger">{{ form.fat.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'food_search' %}" class="btn btn-outline-secondary me-md-2">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Food Search
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save me-2"></i>Add Food Item
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Nutrition Information Guide -->
+        <div class="card mt-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Nutrition Information Guide</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Common Food Examples:</h6>
+                        <ul class="small">
+                            <li><strong>Chicken Breast (100g):</strong> 165 kcal, 31g protein, 0g carbs, 3.6g fat</li>
+                            <li><strong>Apple (medium):</strong> 95 kcal, 0.5g protein, 25g carbs, 0.3g fat</li>
+                            <li><strong>White Rice (1 cup):</strong> 205 kcal, 4.3g protein, 45g carbs, 0.4g fat</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Where to Find Info:</h6>
+                        <ul class="small">
+                            <li>Food packaging labels</li>
+                            <li>USDA Food Database</li>
+                            <li>Nutrition apps (MyFitnessPal, etc.)</li>
+                            <li>Restaurant nutrition information</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
