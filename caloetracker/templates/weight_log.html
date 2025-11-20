@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+
+{% block title %}Weight Log - Caloetracker{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-weight-scale me-2"></i>Weight Tracking</h4>
+            </div>
+            <div class="card-body">
+                <!-- Current Weight Display -->
+                {% if current_weight %}
+                <div class="alert alert-info">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h5 class="mb-1">Current Weight</h5>
+                            <div class="display-4 fw-bold text-primary">{{ current_weight }} kg</div>
+                            <small class="text-muted">Last updated: {{ weight_logs.0.date }}</small>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-weight-scale fa-3x text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Weight Log Form -->
+                <form method="post" class="mb-4">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="id_weight" class="form-label">Weight (kg) *</label>
+                            {{ form.weight }}
+                            {% if form.weight.errors %}
+                            <div class="text-danger">{{ form.weight.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="id_date" class="form-label">Date *</label>
+                            {{ form.date }}
+                            {% if form.date.errors %}
+                            <div class="text-danger">{{ form.date.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="id_notes" class="form-label">Notes</label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                            <div class="text-danger">{{ form.notes.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Log Weight
+                    </button>
+                </form>
+
+                <!-- Weight History -->
+                <h5 class="mb-3">Weight History</h5>
+                {% if weight_logs %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Weight</th>
+                                <th>Change</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in weight_logs %}
+                            <tr>
+                                <td>{{ log.date }}</td>
+                                <td>
+                                    <strong class="{% if forloop.first %}text-primary{% endif %}">
+                                        {{ log.weight }} kg
+                                    </strong>
+                                </td>
+                                <td>
+                                    {% if not forloop.last %}
+                                    {% with prev_index=forloop.counter %}
+                                    {% with prev_log=weight_logs|slice:prev_index|last %}
+                                    {% if prev_log %}
+                                    {% with change=log.weight|add:"0" %}
+                                    {% with prev_weight=prev_log.weight|add:"0" %}
+                                    {% if change > prev_weight %}
+                                    <span class="badge bg-danger">
+                                        +{{ change|floatformat:1 }} kg
+                                    </span>
+                                    {% elif change < prev_weight %} <span class="badge bg-success">
+                                        {{ change|floatformat:1 }} kg
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">
+                                            0.0 kg
+                                        </span>
+                                        {% endif %}
+                                        {% endwith %}
+                                        {% endwith %}
+                                        {% endif %}
+                                        {% endwith %}
+                                        {% endwith %}
+                                        {% endif %}
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ log.notes|default:"-" }}</small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-weight-scale fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No weight entries yet</h5>
+                    <p class="text-muted">Start tracking your weight to see your progress over time.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Progress Chart Card -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Weight Trend</h5>
+            </div>
+            <div class="card-body">
+                {% if weight_data %}
+                <div id="weightChart" style="height: 250px;">
+                    <!-- Chart will be rendered here by JavaScript -->
+                    <canvas id="weightTrendChart"></canvas>
+                </div>
+                {% else %}
+                <div class="text-center py-3">
+                    <i class="fas fa-chart-line fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">Log more weights to see your trend</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Tips Card -->
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Tracking Tips</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled small">
+                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Weigh yourself at the same time each
+                        day</li>
+                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Use the same scale for consistency
+                    </li>
+                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Focus on long-term trends, not daily
+                        fluctuations</li>
+                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Track under similar conditions
+                        (before breakfast)</li>
+                    <li><i class="fas fa-check text-success me-2"></i>Be patient - sustainable weight changes take time
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+{% if weight_data %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const weightData = {{ weight_data| safe
+    }};
+
+    const dates = weightData.map(item => {
+        const date = new Date(item.date);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    });
+    const weights = weightData.map(item => parseFloat(item.weight));
+
+    const ctx = document.getElementById('weightTrendChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: dates,
+            datasets: [{
+                label: 'Weight (kg)',
+                data: weights,
+                borderColor: '#3498db',
+                backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#3498db',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            return `Weight: ${context.parsed.y} kg`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    title: {
+                        display: true,
+                        text: 'Weight (kg)'
+                    },
+                    grid: {
+                        color: 'rgba(0,0,0,0.1)'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Date'
+                    },
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

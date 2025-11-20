@@ -1,0 +1,266 @@
+{% extends 'base.html' %}
+
+{% block title %}Water Tracker - Caloetracker{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0"><i class="fas fa-tint me-2"></i>Water Intake Tracker</h4>
+            </div>
+            <div class="card-body">
+                <!-- Water Progress -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="text-center p-4 bg-light rounded">
+                            <h3 class="text-primary mb-1">{{ total_water_today }} ml</h3>
+                            <p class="text-muted mb-0">Today's Total</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-center p-4 bg-light rounded">
+                            <h3 class="text-info mb-1">{{ water_goal.daily_goal_ml }} ml</h3>
+                            <p class="text-muted mb-0">Daily Goal</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Water Progress</span>
+                        <span>{{ water_percentage|floatformat:0 }}%</span>
+                    </div>
+                    <div class="progress" style="height: 20px;">
+                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ water_percentage }}%"
+                            aria-valuenow="{{ water_percentage }}" aria-valuemin="0" aria-valuemax="100">
+                            {{ total_water_today }} / {{ water_goal.daily_goal_ml }} ml
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Add Buttons -->
+                <div class="mb-4">
+                    <h6 class="mb-3">Quick Add Water</h6>
+                    <div class="btn-group d-flex flex-wrap" role="group">
+                        <form method="post" class="d-inline me-2 mb-2">
+                            {% csrf_token %}
+                            <input type="hidden" name="amount_ml" value="250">
+                            <button type="submit" name="add_water" class="btn btn-outline-info">
+                                <i class="fas fa-plus me-1"></i>250 ml
+                            </button>
+                        </form>
+                        <form method="post" class="d-inline me-2 mb-2">
+                            {% csrf_token %}
+                            <input type="hidden" name="amount_ml" value="500">
+                            <button type="submit" name="add_water" class="btn btn-outline-info">
+                                <i class="fas fa-plus me-1"></i>500 ml
+                            </button>
+                        </form>
+                        <form method="post" class="d-inline me-2 mb-2">
+                            {% csrf_token %}
+                            <input type="hidden" name="amount_ml" value="750">
+                            <button type="submit" name="add_water" class="btn btn-outline-info">
+                                <i class="fas fa-plus me-1"></i>750 ml
+                            </button>
+                        </form>
+                        <form method="post" class="d-inline mb-2">
+                            {% csrf_token %}
+                            <input type="hidden" name="amount_ml" value="1000">
+                            <button type="submit" name="add_water" class="btn btn-outline-info">
+                                <i class="fas fa-plus me-1"></i>1000 ml
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Custom Amount Form -->
+                <form method="post" class="mb-4">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="id_amount_ml" class="form-label">Custom Amount (ml)</label>
+                            {{ water_form.amount_ml }}
+                            {% if water_form.amount_ml.errors %}
+                            <div class="text-danger">{{ water_form.amount_ml.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 d-flex align-items-end">
+                            <button type="submit" name="add_water" class="btn btn-info w-100">
+                                <i class="fas fa-plus me-2"></i>Add Custom Amount
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Water Goal Form -->
+                <form method="post" class="mb-4">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="id_daily_goal_ml" class="form-label">Daily Water Goal (ml)</label>
+                            {{ goal_form.daily_goal_ml }}
+                            {% if goal_form.daily_goal_ml.errors %}
+                            <div class="text-danger">{{ goal_form.daily_goal_ml.errors }}</div>
+                            {% endif %}
+                            <div class="form-text">Recommended: 2000-3000 ml per day</div>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-end">
+                            <button type="submit" name="set_goal" class="btn btn-primary w-100">
+                                <i class="fas fa-bullseye me-2"></i>Set Goal
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Today's Water Intake History -->
+                <h5 class="mb-3">Today's Water Intake</h5>
+                {% if water_intakes %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Time</th>
+                                <th>Amount</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for intake in water_intakes %}
+                            <tr>
+                                <td>{{ intake.time|time:"H:i" }}</td>
+                                <td>
+                                    <span class="badge bg-info">{{ intake.amount_ml }} ml</span>
+                                </td>
+                                <td>
+                                    <form method="post" action="{% url 'delete_water_intake' intake.id %}"
+                                        class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                                            onclick="return confirm('Delete this water intake?')">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-3">
+                    <i class="fas fa-tint fa-2x text-muted mb-2"></i>
+                    <p class="text-muted">No water intake logged today</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Hydration Tips -->
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Hydration Tips</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled small">
+                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Drink water throughout the day</li>
+                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Keep a water bottle with you</li>
+                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Drink before you feel thirsty</li>
+                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Monitor urine color (pale yellow is
+                        ideal)</li>
+                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Increase intake during exercise</li>
+                    <li><i class="fas fa-check text-success me-2"></i>Eat water-rich foods (fruits, vegetables)</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Water Benefits -->
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-heart me-2"></i>Benefits of Hydration</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <i class="fas fa-brain fa-2x text-primary mb-2"></i>
+                        <h6 class="mb-1">Brain Function</h6>
+                        <small class="text-muted">Improves focus</small>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <i class="fas fa-running fa-2x text-success mb-2"></i>
+                        <h6 class="mb-1">Energy Levels</h6>
+                        <small class="text-muted">Boosts performance</small>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <i class="fas fa-fire fa-2x text-warning mb-2"></i>
+                        <h6 class="mb-1">Metabolism</h6>
+                        <small class="text-muted">Supports fat burning</small>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <i class="fas fa-skin fa-2x text-info mb-2"></i>
+                        <h6 class="mb-1">Skin Health</h6>
+                        <small class="text-muted">Promotes clear skin</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Water Calculator -->
+        <div class="card mt-4">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0"><i class="fas fa-calculator me-2"></i>Water Needs Calculator</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Weight (kg)</label>
+                    <input type="number" class="form-control" id="weightInput" placeholder="Enter your weight">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Activity Level</label>
+                    <select class="form-control" id="activitySelect">
+                        <option value="1.2">Sedentary</option>
+                        <option value="1.375">Lightly Active</option>
+                        <option value="1.55">Moderately Active</option>
+                        <option value="1.725">Very Active</option>
+                        <option value="1.9">Extra Active</option>
+                    </select>
+                </div>
+                <button class="btn btn-warning w-100" onclick="calculateWaterNeeds()">
+                    <i class="fas fa-calculator me-2"></i>Calculate
+                </button>
+                <div id="waterResult" class="mt-3 text-center" style="display: none;">
+                    <h5 class="text-primary" id="calculatedWater"></h5>
+                    <small class="text-muted">Recommended daily water intake</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    function calculateWaterNeeds() {
+        const weight = parseFloat(document.getElementById('weightInput').value);
+        const activityLevel = parseFloat(document.getElementById('activitySelect').value);
+
+        if (!weight || weight <= 0) {
+            alert('Please enter a valid weight');
+            return;
+        }
+
+        // Basic water calculation: 30-35 ml per kg of body weight
+        const baseWater = weight * 33; // Average of 30-35 ml
+        const adjustedWater = Math.round(baseWater * activityLevel);
+
+        document.getElementById('calculatedWater').textContent = adjustedWater + ' ml';
+        document.getElementById('waterResult').style.display = 'block';
+
+        // Auto-fill the goal form
+        document.getElementById('id_daily_goal_ml').value = adjustedWater;
+    }
+</script>
+{% endblock %}

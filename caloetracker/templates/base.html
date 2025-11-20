@@ -98,6 +98,80 @@
             border-radius: 10px;
             border: none;
         }
+
+        /* Form styling */
+        .form-control,
+        .form-select {
+            border-radius: 8px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        }
+
+        /* Badge styling */
+        .badge {
+            font-size: 0.8em;
+            padding: 6px 12px;
+            border-radius: 20px;
+        }
+
+        /* Table styling */
+        .table-hover tbody tr:hover {
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .calorie-display {
+                font-size: 1.8rem;
+            }
+
+            .stats-number {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* Custom progress bar styles */
+        .progress {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            border-radius: 10px;
+            transition: width 0.6s ease;
+        }
+
+        /* Water tracking specific styles */
+        .water-glass {
+            font-size: 2rem;
+            color: #17a2b8;
+            transition: all 0.3s ease;
+        }
+
+        .water-glass.filled {
+            color: #007bff;
+        }
+
+        /* Photo gallery styles */
+        .card-img-top {
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover .card-img-top {
+            transform: scale(1.05);
+        }
+
+        /* Weight chart responsive */
+        #weightTrendChart {
+            max-height: 250px;
+        }
     </style>
 </head>
 
@@ -128,6 +202,18 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'add_meal' %}">Add Meal</a>
+                    </li>
+                    <!-- Phase 1 New Links -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="progressDropdown" role="button"
+                            data-bs-toggle="dropdown">
+                            Progress
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'weight_log' %}">Weight Log</a></li>
+                            <li><a class="dropdown-item" href="{% url 'progress_photos' %}">Progress Photos</a></li>
+                            <li><a class="dropdown-item" href="{% url 'water_tracker' %}">Water Tracker</a></li>
+                        </ul>
                     </li>
                     {% endif %}
                 </ul>

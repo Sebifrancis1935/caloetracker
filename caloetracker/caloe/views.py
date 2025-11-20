@@ -5,8 +5,8 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.utils import timezone
 from django.db import models
-from .models import CustomUser, FoodItem, Meal, MealFoodItem, DailyProgress
-from .forms import CustomUserCreationForm, CustomAuthenticationForm, UserProfileForm, FoodSearchForm, MealForm, FoodItemForm  # ADD FoodItemForm HERE
+from .models import CustomUser, FoodItem, Meal, MealFoodItem, DailyProgress, WeightLog, ProgressPhoto, WaterIntake, WaterGoal
+from .forms import CustomUserCreationForm, CustomAuthenticationForm, UserProfileForm, FoodSearchForm, MealForm, FoodItemForm, WeightLogForm, ProgressPhotoForm, WaterIntakeForm, WaterGoalForm
 import json
 
 def register_view(request):
@@ -121,8 +121,12 @@ def add_meal(request):
         # Create meal
         meal = Meal.objects.create(user=request.user, meal_type=meal_type)
         
-        # Add food items to meal
+        # Add food items to meal and calculate totals
         total_calories = 0
+        total_protein = 0
+        total_carbs = 0
+        total_fat = 0
+        
         for item in food_items:
             food_item = FoodItem.objects.get(id=item['food_id'])
             quantity = item.get('quantity', 1)
@@ -132,17 +136,28 @@ def add_meal(request):
                 quantity=quantity
             )
             total_calories += food_item.calories * quantity
+            total_protein += food_item.protein * quantity
+            total_carbs += food_item.carbs * quantity
+            total_fat += food_item.fat * quantity
         
-        # Update daily progress
+        # Update daily progress with macros
         today = timezone.now().date()
         daily_progress, created = DailyProgress.objects.get_or_create(
             user=request.user,
             date=today,
-            defaults={'total_calories_consumed': total_calories}
+            defaults={
+                'total_calories_consumed': total_calories,
+                'total_protein': total_protein,
+                'total_carbs': total_carbs,
+                'total_fat': total_fat
+            }
         )
         
         if not created:
             daily_progress.total_calories_consumed += total_calories
+            daily_progress.total_protein += total_protein
+            daily_progress.total_carbs += total_carbs
+            daily_progress.total_fat += total_fat
             daily_progress.save()
         
         return JsonResponse({'success': True, 'meal_id': meal.id})
@@ -187,7 +202,6 @@ def delete_meal(request, meal_id):
         
         return JsonResponse({'success': True})
 
-# ADD THESE NEW VIEWS FOR FOOD ITEM MANAGEMENT
 @login_required
 def add_food_item(request):
     if request.method == 'POST':
@@ -219,3 +233,196 @@ def delete_food_item(request, food_id):
         messages.success(request, f'"{food_name}" has been deleted from your food database.')
         return redirect('my_food_items')
     return redirect('my_food_items')
+
+# Phase 1: Weight Tracking
+@login_required
+def weight_log(request):
+    weight_logs = WeightLog.objects.filter(user=request.user).order_by('-date')[:30]  # Last 30 entries
+    
+    if request.method == 'POST':
+        form = WeightLogForm(request.POST)
+        if form.is_valid():
+            weight_log = form.save(commit=False)
+            weight_log.user = request.user
+            
+            # Check if entry already exists for this date
+            existing_log = WeightLog.objects.filter(user=request.user, date=weight_log.date).first()
+            if existing_log:
+                existing_log.weight = weight_log.weight
+                existing_log.notes = weight_log.notes
+                existing_log.save()
+                messages.success(request, f'Weight updated for {weight_log.date}')
+            else:
+                weight_log.save()
+                messages.success(request, f'Weight logged for {weight_log.date}')
+            
+            return redirect('weight_log')
+    else:
+        form = WeightLogForm(initial={'date': timezone.now().date()})
+    
+    # Prepare data for chart
+    weight_data = list(WeightLog.objects.filter(user=request.user)
+                                  .order_by('date')
+                                  .values('date', 'weight')[:30])
+    
+    context = {
+        'form': form,
+        'weight_logs': weight_logs,
+        'weight_data': weight_data,
+        'current_weight': weight_logs.first().weight if weight_logs else None,
+    }
+    return render(request, 'weight_log.html', context)
+
+# Phase 1: Progress Photos
+@login_required
+def progress_photos(request):
+    photos = ProgressPhoto.objects.filter(user=request.user).order_by('-date')
+    
+    if request.method == 'POST':
+        form = ProgressPhotoForm(request.POST, request.FILES)
+        if form.is_valid():
+            photo = form.save(commit=False)
+            photo.user = request.user
+            photo.save()
+            messages.success(request, 'Progress photo added successfully!')
+            return redirect('progress_photos')
+    else:
+        form = ProgressPhotoForm(initial={'date': timezone.now().date()})
+    
+    context = {
+        'form': form,
+        'photos': photos,
+    }
+    return render(request, 'progress_photos.html', context)
+
+@login_required
+def delete_progress_photo(request, photo_id):
+    photo = get_object_or_404(ProgressPhoto, id=photo_id, user=request.user)
+    if request.method == 'POST':
+        photo.delete()
+        messages.success(request, 'Progress photo deleted successfully!')
+        return redirect('progress_photos')
+    return redirect('progress_photos')
+
+# Phase 1: Water Tracking
+@login_required
+def water_tracker(request):
+    today = timezone.now().date()
+    water_intakes = WaterIntake.objects.filter(user=request.user, date=today).order_by('-time')
+    
+    # Get or create water goal
+    water_goal, created = WaterGoal.objects.get_or_create(
+        user=request.user,
+        defaults={'daily_goal_ml': 2000}
+    )
+    
+    # Calculate today's total
+    total_water_today = water_intakes.aggregate(total=models.Sum('amount_ml'))['total'] or 0
+    water_percentage = min(100, (total_water_today / water_goal.daily_goal_ml) * 100) if water_goal.daily_goal_ml > 0 else 0
+    
+    if request.method == 'POST':
+        if 'add_water' in request.POST:
+            water_form = WaterIntakeForm(request.POST)
+            if water_form.is_valid():
+                water_intake = water_form.save(commit=False)
+                water_intake.user = request.user
+                water_intake.date = today
+                water_intake.save()
+                messages.success(request, f'Added {water_intake.amount_ml}ml water intake!')
+                return redirect('water_tracker')
+        
+        elif 'set_goal' in request.POST:
+            goal_form = WaterGoalForm(request.POST, instance=water_goal)
+            if goal_form.is_valid():
+                goal_form.save()
+                messages.success(request, f'Water goal updated to {water_goal.daily_goal_ml}ml!')
+                return redirect('water_tracker')
+    else:
+        water_form = WaterIntakeForm()
+        goal_form = WaterGoalForm(instance=water_goal)
+    
+    context = {
+        'water_form': water_form,
+        'goal_form': goal_form,
+        'water_intakes': water_intakes,
+        'total_water_today': total_water_today,
+        'water_goal': water_goal,
+        'water_percentage': water_percentage,
+    }
+    return render(request, 'water_tracker.html', context)
+
+@login_required
+def delete_water_intake(request, intake_id):
+    water_intake = get_object_or_404(WaterIntake, id=intake_id, user=request.user)
+    if request.method == 'POST':
+        water_intake.delete()
+        messages.success(request, 'Water intake deleted successfully!')
+        return redirect('water_tracker')
+    return redirect('water_tracker')
+
+# Phase 1: Quick Add Food
+@login_required
+def quick_add_food(request, food_id):
+    """Quick add a common food to today's meals"""
+    food_item = get_object_or_404(FoodItem, id=food_id)
+    
+    if request.method == 'POST':
+        # Create a quick snack meal
+        meal = Meal.objects.create(user=request.user, meal_type='SNACK')
+        MealFoodItem.objects.create(meal=meal, food_item=food_item, quantity=1)
+        
+        # Update daily progress
+        today = timezone.now().date()
+        daily_progress, created = DailyProgress.objects.get_or_create(
+            user=request.user,
+            date=today,
+            defaults={
+                'total_calories_consumed': food_item.calories,
+                'total_protein': food_item.protein,
+                'total_carbs': food_item.carbs,
+                'total_fat': food_item.fat
+            }
+        )
+        
+        if not created:
+            daily_progress.total_calories_consumed += food_item.calories
+            daily_progress.total_protein += food_item.protein
+            daily_progress.total_carbs += food_item.carbs
+            daily_progress.total_fat += food_item.fat
+            daily_progress.save()
+        
+        messages.success(request, f'Added {food_item.name} to your daily log!')
+        return redirect('dashboard')
+    
+    return redirect('dashboard')
+
+@login_required
+def get_quick_add_foods(request):
+    """Get commonly logged foods for quick add"""
+    # Get user's most frequently logged foods
+    common_foods = FoodItem.objects.filter(
+        mealfooditem__meal__user=request.user
+    ).annotate(
+        log_count=models.Count('mealfooditem')
+    ).order_by('-log_count')[:6]
+    
+    # If not enough, get system common foods
+    if len(common_foods) < 6:
+        system_foods = FoodItem.objects.filter(created_by__isnull=True).exclude(
+            id__in=[f.id for f in common_foods]
+        )[:6-len(common_foods)]
+        common_foods = list(common_foods) + list(system_foods)
+    
+    food_data = [{
+        'id': food.id,
+        'name': food.name,
+        'calories': food.calories,
+        'protein': food.protein,
+        'carbs': food.carbs,
+        'fat': food.fat,
+        'serving_size': food.serving_size
+    } for food in common_foods]
+    
+    return JsonResponse(food_data, safe=False)
+
+    
