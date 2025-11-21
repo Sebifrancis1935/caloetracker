@@ -130,7 +130,8 @@ class MealFoodItem(models.Model):
 
 class DailyProgress(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    date = models.DateField(auto_now_add=True)
+    # date = models.DateField(auto_now_add=True)
+    date = models.DateField(default=timezone.now)  # CHANGED: Remove auto_now_add=True
     total_calories_consumed = models.FloatField(default=0)
     # Add macro fields for Phase 1
     total_protein = models.FloatField(default=0)

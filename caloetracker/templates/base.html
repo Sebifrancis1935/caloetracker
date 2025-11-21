@@ -172,6 +172,26 @@
         #weightTrendChart {
             max-height: 250px;
         }
+
+        /* Analytics specific styles */
+        .card {
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-group .btn.active {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+            color: white;
+        }
+
+        /* Chart container styling */
+        canvas {
+            border-radius: 8px;
+        }
     </style>
 </head>
 
@@ -195,6 +215,9 @@
                         <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" href="{% url 'analytics' %}">Analytics</a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="{% url 'food_search' %}">Food Search</a>
                     </li>
                     <li class="nav-item">
@@ -203,7 +226,7 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'add_meal' %}">Add Meal</a>
                     </li>
-                    <!-- Phase 1 New Links -->
+                    <!-- Progress Dropdown -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="progressDropdown" role="button"
                             data-bs-toggle="dropdown">
@@ -211,7 +234,7 @@
                         </a>
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="{% url 'weight_log' %}">Weight Log</a></li>
-                            <li><a class="dropdown-item" href="{% url 'progress_photos' %}">Progress Photos</a></li>
+                            <!-- <li><a class="dropdown-item" href="{% url 'progress_photos' %}">Progress Photos</a></li> -->
                             <li><a class="dropdown-item" href="{% url 'water_tracker' %}">Water Tracker</a></li>
                         </ul>
                     </li>

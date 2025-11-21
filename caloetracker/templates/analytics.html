@@ -1,0 +1,338 @@
+{% extends 'base.html' %}
+
+{% block title %}Analytics - Caloetracker{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="h3 mb-0"><i class="fas fa-chart-bar me-2"></i>Analytics Dashboard</h1>
+
+            <!-- Period Selector -->
+            <div class="btn-group">
+                <a href="{% url 'analytics' %}?period=day"
+                    class="btn btn-outline-primary {% if period == 'day' %}active{% endif %}">
+                    Day
+                </a>
+                <a href="{% url 'analytics' %}?period=week"
+                    class="btn btn-outline-primary {% if period == 'week' %}active{% endif %}">
+                    Week
+                </a>
+                <a href="{% url 'analytics' %}?period=month"
+                    class="btn btn-outline-primary {% if period == 'month' %}active{% endif %}">
+                    Month
+                </a>
+                <a href="{% url 'analytics' %}?period=year"
+                    class="btn btn-outline-primary {% if period == 'year' %}active{% endif %}">
+                    Year
+                </a>
+            </div>
+        </div>
+        <p class="text-muted mb-0">Track your progress with detailed analytics from {{ start_date }} to {{ end_date }}
+        </p>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-fire fa-2x text-warning mb-3"></i>
+                <h4 class="card-title">{{ stats.avg_calories|floatformat:0 }}</h4>
+                <p class="card-text text-muted">Avg Daily Calories</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-tint fa-2x text-info mb-3"></i>
+                <h4 class="card-title">{{ stats.avg_water|floatformat:0 }} ml</h4>
+                <p class="card-text text-muted">Avg Daily Water</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-weight-scale fa-2x text-primary mb-3"></i>
+                <h4
+                    class="card-title {% if stats.weight_change > 0 %}text-danger{% elif stats.weight_change < 0 %}text-success{% endif %}">
+                    {{ stats.weight_change|floatformat:1 }} kg
+                </h4>
+                <p class="card-text text-muted">Weight Change</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-calendar-day fa-2x text-success mb-3"></i>
+                <h4 class="card-title">{{ stats.days_count }}</h4>
+                <p class="card-text text-muted">Days Tracked</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Calorie Analytics -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-warning text-white">
+                <h5 class="mb-0"><i class="fas fa-fire me-2"></i>Calorie Intake Analytics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <canvas id="calorieChart" height="250"></canvas>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <h6 class="text-primary mb-1">{{ stats.total_calories|floatformat:0 }}</h6>
+                                    <small class="text-muted">Total Calories</small>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <h6 class="text-success mb-1">{{ stats.avg_protein|floatformat:1 }}g</h6>
+                                    <small class="text-muted">Avg Protein</small>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <h6 class="text-info mb-1">{{ stats.avg_carbs|floatformat:1 }}g</h6>
+                                    <small class="text-muted">Avg Carbs</small>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <h6 class="text-warning mb-1">{{ stats.avg_fat|floatformat:1 }}g</h6>
+                                    <small class="text-muted">Avg Fat</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Water Analytics -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-tint me-2"></i>Water Intake Analytics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <canvas id="waterChart" height="250"></canvas>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center h-100 d-flex align-items-center justify-content-center">
+                            <div>
+                                <div class="display-4 text-info mb-2">{{ stats.total_water|floatformat:0 }}</div>
+                                <p class="text-muted mb-0">Total Water (ml)</p>
+                                <p class="text-muted small">Over {{ stats.days_count }} days</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Weight Analytics -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-weight-scale me-2"></i>Weight Progress Analytics</h5>
+            </div>
+            <div class="card-body">
+                {% if weight_chart_data.labels %}
+                <canvas id="weightChart" height="250"></canvas>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-weight-scale fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No weight data available</h5>
+                    <p class="text-muted">Start logging your weight to see progress analytics.</p>
+                    <a href="{% url 'weight_log' %}" class="btn btn-primary">Log Weight</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Calorie Chart
+        const calorieCtx = document.getElementById('calorieChart').getContext('2d');
+        new Chart(calorieCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ calorie_chart_data.labels | safe }},
+        datasets: [
+        {
+            label: 'Calories Consumed',
+            data: {{ calorie_chart_data.consumed | safe }},
+        backgroundColor: 'rgba(255, 193, 7, 0.8)',
+        borderColor: 'rgba(255, 193, 7, 1)',
+        borderWidth: 1
+                },
+        {
+            label: 'Daily Target',
+            data: {{ calorie_chart_data.target | safe }},
+        type: 'line',
+        borderColor: 'rgba(220, 53, 69, 1)',
+        borderWidth: 2,
+        fill: false,
+        pointRadius: 0
+                }
+    ]
+        },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Calories'
+                }
+            },
+            x: {
+                title: {
+                    display: true,
+                    text: 'Date'
+                }
+            }
+        },
+        plugins: {
+            tooltip: {
+                callbacks: {
+                    label: function (context) {
+                        return `${context.dataset.label}: ${context.parsed.y} kcal`;
+                    }
+                }
+            }
+        }
+    }
+    });
+
+    // Water Chart
+    const waterCtx = document.getElementById('waterChart').getContext('2d');
+    new Chart(waterCtx, {
+        type: 'line',
+        data: {
+            labels: {{ water_chart_data.labels | safe }},
+        datasets: [{
+            label: 'Water Intake (ml)',
+            data: {{ water_chart_data.amounts | safe }},
+        backgroundColor: 'rgba(23, 162, 184, 0.2)',
+        borderColor: 'rgba(23, 162, 184, 1)',
+        borderWidth: 3,
+        fill: true,
+        tension: 0.4,
+        pointBackgroundColor: 'rgba(23, 162, 184, 1)',
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 2,
+        pointRadius: 4
+            }]
+        },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Water (ml)'
+                }
+            },
+            x: {
+                title: {
+                    display: true,
+                    text: 'Date'
+                }
+            }
+        },
+        plugins: {
+            tooltip: {
+                callbacks: {
+                    label: function (context) {
+                        return `Water: ${context.parsed.y} ml`;
+                    }
+                }
+            }
+        }
+    }
+    });
+
+    // Weight Chart (only if data exists)
+    {% if weight_chart_data.labels %}
+    const weightCtx = document.getElementById('weightChart').getContext('2d');
+    new Chart(weightCtx, {
+        type: 'line',
+        data: {
+            labels: {{ weight_chart_data.labels | safe }},
+        datasets: [{
+            label: 'Weight (kg)',
+            data: {{ weight_chart_data.weights | safe }},
+        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+        borderColor: 'rgba(13, 110, 253, 1)',
+        borderWidth: 3,
+        fill: true,
+        tension: 0.4,
+        pointBackgroundColor: 'rgba(13, 110, 253, 1)',
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 2,
+        pointRadius: 4
+            }]
+        },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: false,
+                title: {
+                    display: true,
+                    text: 'Weight (kg)'
+                }
+            },
+            x: {
+                title: {
+                    display: true,
+                    text: 'Date'
+                }
+            }
+        },
+        plugins: {
+            tooltip: {
+                callbacks: {
+                    label: function (context) {
+                        return `Weight: ${context.parsed.y} kg`;
+                    }
+                }
+            }
+        }
+    }
+    });
+    {% endif %}
+});
+</script>
+{% endblock %}

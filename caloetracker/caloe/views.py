@@ -5,6 +5,8 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.utils import timezone
 from django.db import models
+from django.db.models import Sum, Avg
+from datetime import timedelta
 from .models import CustomUser, FoodItem, Meal, MealFoodItem, DailyProgress, WeightLog, ProgressPhoto, WaterIntake, WaterGoal
 from .forms import CustomUserCreationForm, CustomAuthenticationForm, UserProfileForm, FoodSearchForm, MealForm, FoodItemForm, WeightLogForm, ProgressPhotoForm, WaterIntakeForm, WaterGoalForm
 import json
@@ -425,4 +427,172 @@ def get_quick_add_foods(request):
     
     return JsonResponse(food_data, safe=False)
 
+@login_required
+def analytics(request):
+    # Get time period from request (default to week)
+    period = request.GET.get('period', 'week')
     
+    # Calculate date ranges
+    end_date = timezone.now().date()
+    
+    if period == 'day':
+        start_date = end_date
+        group_by = 'hour'
+    elif period == 'week':
+        start_date = end_date - timedelta(days=7)
+        group_by = 'day'
+    elif period == 'month':
+        start_date = end_date - timedelta(days=30)
+        group_by = 'day'
+    elif period == 'year':
+        start_date = end_date - timedelta(days=365)
+        group_by = 'month'
+    else:
+        start_date = end_date - timedelta(days=7)
+        group_by = 'day'
+    
+    # Get calorie data
+    calorie_data = DailyProgress.objects.filter(
+        user=request.user,
+        date__range=[start_date, end_date]
+    ).order_by('date')
+    
+    # Get water data
+    water_data = WaterIntake.objects.filter(
+        user=request.user,
+        date__range=[start_date, end_date]
+    ).values('date').annotate(total_water=Sum('amount_ml')).order_by('date')
+    
+    # Get weight data
+    weight_data = WeightLog.objects.filter(
+        user=request.user,
+        date__range=[start_date, end_date]
+    ).order_by('date')
+    
+    # Prepare data for charts
+    calorie_chart_data = prepare_calorie_chart_data(calorie_data, period, group_by)
+    water_chart_data = prepare_water_chart_data(water_data, period, group_by)
+    weight_chart_data = prepare_weight_chart_data(weight_data, period, group_by)
+    
+    # Calculate statistics
+    stats = calculate_analytics_stats(request.user, start_date, end_date)
+    
+    context = {
+        'period': period,
+        'calorie_chart_data': calorie_chart_data,
+        'water_chart_data': water_chart_data,
+        'weight_chart_data': weight_chart_data,
+        'stats': stats,
+        'start_date': start_date,
+        'end_date': end_date,
+    }
+    return render(request, 'analytics.html', context)
+
+# Helper functions for data preparation
+def prepare_calorie_chart_data(calorie_data, period, group_by):
+    labels = []
+    consumed_data = []
+    target_data = []
+    
+    for progress in calorie_data:
+        if group_by == 'day':
+            labels.append(progress.date.strftime('%b %d'))
+        elif group_by == 'month':
+            month_label = progress.date.strftime('%b %Y')
+            if month_label not in labels:
+                labels.append(month_label)
+        elif group_by == 'hour':
+            labels.append(progress.date.strftime('%H:%M'))
+        
+        consumed_data.append(progress.total_calories_consumed)
+        target_data.append(progress.user.get_daily_calorie_target())
+    
+    return {
+        'labels': labels,
+        'consumed': consumed_data,
+        'target': target_data
+    }
+
+def prepare_water_chart_data(water_data, period, group_by):
+    labels = []
+    water_amounts = []
+    
+    for data in water_data:
+        if group_by == 'day':
+            labels.append(data['date'].strftime('%b %d'))
+        elif group_by == 'month':
+            month_label = data['date'].strftime('%b %Y')
+            if month_label not in labels:
+                labels.append(month_label)
+        
+        water_amounts.append(data['total_water'])
+    
+    return {
+        'labels': labels,
+        'amounts': water_amounts
+    }
+
+def prepare_weight_chart_data(weight_data, period, group_by):
+    labels = []
+    weights = []
+    
+    for weight_log in weight_data:
+        if group_by == 'day':
+            labels.append(weight_log.date.strftime('%b %d'))
+        elif group_by == 'month':
+            month_label = weight_log.date.strftime('%b %Y')
+            if month_label not in labels:
+                labels.append(month_label)
+        
+        weights.append(weight_log.weight)
+    
+    return {
+        'labels': labels,
+        'weights': weights
+    }
+
+def calculate_analytics_stats(user, start_date, end_date):
+    # Calorie stats
+    calorie_stats = DailyProgress.objects.filter(
+        user=user,
+        date__range=[start_date, end_date]
+    ).aggregate(
+        avg_calories=Avg('total_calories_consumed'),
+        total_calories=Sum('total_calories_consumed'),
+        avg_protein=Avg('total_protein'),
+        avg_carbs=Avg('total_carbs'),
+        avg_fat=Avg('total_fat')
+    )
+    
+    # Water stats
+    water_stats = WaterIntake.objects.filter(
+        user=user,
+        date__range=[start_date, end_date]
+    ).aggregate(
+        avg_water=Avg('amount_ml'),
+        total_water=Sum('amount_ml')
+    )
+    
+    # Weight stats
+    weight_logs = WeightLog.objects.filter(
+        user=user,
+        date__range=[start_date, end_date]
+    ).order_by('date')
+    
+    weight_change = 0
+    if weight_logs.count() >= 2:
+        first_weight = weight_logs.first().weight
+        last_weight = weight_logs.last().weight
+        weight_change = last_weight - first_weight
+    
+    return {
+        'avg_calories': calorie_stats['avg_calories'] or 0,
+        'total_calories': calorie_stats['total_calories'] or 0,
+        'avg_protein': calorie_stats['avg_protein'] or 0,
+        'avg_carbs': calorie_stats['avg_carbs'] or 0,
+        'avg_fat': calorie_stats['avg_fat'] or 0,
+        'avg_water': water_stats['avg_water'] or 0,
+        'total_water': water_stats['total_water'] or 0,
+        'weight_change': weight_change,
+        'days_count': (end_date - start_date).days + 1
+    }

@@ -21,4 +21,5 @@ urlpatterns = [
     path('delete-water/<int:intake_id>/', views.delete_water_intake, name='delete_water_intake'),
     path('quick-add/<int:food_id>/', views.quick_add_food, name='quick_add_food'),
     path('quick-add-foods/', views.get_quick_add_foods, name='get_quick_add_foods'),
+    path('analytics/', views.analytics, name='analytics'),
 ]
